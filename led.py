@@ -374,6 +374,8 @@ def init_matrix():
     chain_length=2 so the library knows it's 2 wide.
     """
     options = RGBMatrixOptions()
+    options.hardware_mapping = 'adafruit-hat'
+    options.pixel_mapper_config = 'Rotate:0;Swap:0,2'
     options.rows = 32
     options.cols = 64
     options.chain_length = 2  # Two 64x32 panels chained horizontally
