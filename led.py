@@ -331,6 +331,23 @@ CHAR_TO_COLOR = {
 }
 
 # --------------------------------------------------------------------
+# Utility: Clean ASCII frame
+# --------------------------------------------------------------------
+def clean_ascii_frame(raw: str) -> str:
+    """
+    Strips any ASCII art lines that include headers, row/column indexes,
+    or pipe separators. Keeps only lines with pixel characters (like '.', 'P', etc.).
+    """
+    lines = raw.strip().split("\n")
+    cleaned = []
+    for line in lines:
+        if "|" in line:
+            line = line.split("|", 1)[1]  # Use text after the pipe
+        if any(c.isalpha() or c == '.' for c in line):
+            cleaned.append(line.strip())
+    return "\n".join(cleaned)
+
+# --------------------------------------------------------------------
 # Load frames from ascii_frames/ folder
 # --------------------------------------------------------------------
 def load_ascii_frames_from_folder(folder_path):

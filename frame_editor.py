@@ -178,10 +178,18 @@ class FrameEditor:
             "black": ".", "white": "W", "red": "R", "green": "G",
             "blue": "B", "purple": "P", "orange": "O", "pink": "K"
         }
+
         with open(file_path, "w") as f:
-            for row in self.grid:
-                line = " ".join(color_to_symbol.get(cell, ".") for cell in row)
-                f.write(line + "\n")
+            # Write column headers
+            col_header = "     " + " ".join(f"{i:2}" for i in range(GRID_WIDTH))
+            f.write(col_header + "\n")
+            f.write("     +" + "-" * (3 * GRID_WIDTH - 1) + "\n")
+
+            # Write each row with index and separator
+            for y, row in enumerate(self.grid):
+                symbol_row = " ".join(color_to_symbol.get(cell, ".") for cell in row)
+                f.write(f"{y:3} | {symbol_row}\n")
+
         print(f"ASCII exported to {file_path}")
 
 if __name__ == "__main__":
