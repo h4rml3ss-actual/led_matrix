@@ -614,6 +614,7 @@ def main():
                 if vol < 0.005:
                     if silence_start_time is None:
                         silence_start_time = time.time()
+                        current_frame = ALL_FRAMES[0]  # Fallback frame during first moment of silence
                     elif time.time() - silence_start_time > 5:
                         current_frame = SMILE_GRID
                     else:
