@@ -490,8 +490,7 @@ def crop_center_64x32(pil_image):
 ALL_FRAMES = load_ascii_frames_from_folder("ascii_frames")
 
 with open(os.path.join("ascii_frames", "smile.txt"), "r") as f:
-    ascii_data = clean_ascii_frame(f.read())
-    SMILE_GRID = parse_ascii_frame(ascii_data, rows=32, cols=64)
+    SMILE_GRID = parse_ascii_frame(f.read(), rows=32, cols=64)
 
 # --------------------------------------------------------------------
 # 7. Audio Capture
