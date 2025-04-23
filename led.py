@@ -403,7 +403,7 @@ def init_matrix():
     """
     options = RGBMatrixOptions()
     options.hardware_mapping = 'adafruit-hat'  # Correct mapping for Adafruit bonnet
-    options.led_rgb_sequence = 'BRG'
+    options.led_rgb_sequence = 'RGB'
     options.gpio_slowdown = 2  # Helps with color accuracy and signal timing
     options.pixel_mapper_config = 'Rotate:0'
     options.rows = 32
@@ -630,7 +630,7 @@ def main():
     next_animation_time = time.time() + random.randint(10, 150)
 
     # Adjust path to your actual GIF folder
-    GIF_FOLDER = "/home/operator/LEDMatrix/gifs"
+    GIF_FOLDER = "/home/operator/led_matrix/gifs"
 
     silence_start_time = None
     try:
