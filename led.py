@@ -339,23 +339,23 @@ def rgb_to_grb(color):
     return (color[1], color[0], color[2])
 
 # Set this to True if your LED matrix expects GRB order (e.g., some Adafruit panels).
-USE_GRB_ORDER = True  # Set to True if needed.
+USE_GRB_ORDER = False  # Disabled: panels expect RGB values directly.
 
 def convert_color(color):
     if USE_GRB_ORDER:
         return rgb_to_grb(color)
     return color
 
+# CHAR_TO_COLOR maps ASCII characters to (R, G, B) tuples.
 CHAR_TO_COLOR = {
-    '.': (0,   0,   0),    # Off
-    'R': (0,   0,   255),    # Red in BGR
-    'G': (0,   255, 0),      # Green in BGR
-    'B': (255, 0,   0),      # Blue in BGR
-    'K': (180, 105, 255),    # Pink/hot pink in BGR (was RGB 255,105,180)
-    'O': (0, 140, 255),      # Orange in BGR (was RGB 255,140,0)
-    'P': (255, 0,   255),    # Purple in BGR (was RGB 255,0,255)
-    'Y': (0, 255, 255),      # Yellow in BGR (was RGB 255,255,0)
-    # Extend as you like
+    '.': (0,   0,   0),      # Off
+    'R': (255, 0,   0),      # Red
+    'G': (0,   255, 0),      # Green
+    'B': (0,   0,   255),    # Blue
+    'K': (255, 105, 180),    # Pink
+    'O': (255, 140, 0),      # Orange
+    'P': (255, 0,   255),    # Purple
+    'Y': (255, 255, 0),      # Yellow
 }
 
 # --------------------------------------------------------------------
