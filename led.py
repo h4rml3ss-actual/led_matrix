@@ -318,6 +318,24 @@ def parse_ascii_frame(ascii_block, rows=32, cols=64):
 # --------------------------------------------------------------------
 # 3. Color Mapping
 # --------------------------------------------------------------------
+
+# ---- Color order conversion ----
+# The rpi-rgb-led-matrix library expects RGB order by default. If your hardware requires a different order,
+# e.g., GRB or BGR, define a conversion function here and apply it before calling SetPixel.
+# For demonstration, let's provide a GRB conversion function and use it.
+
+def rgb_to_grb(color):
+    """Convert (R,G,B) to (G,R,B) tuple."""
+    return (color[1], color[0], color[2])
+
+# Set this to True if your LED matrix expects GRB order (e.g., some Adafruit panels).
+USE_GRB_ORDER = True  # Set to True if needed.
+
+def convert_color(color):
+    if USE_GRB_ORDER:
+        return rgb_to_grb(color)
+    return color
+
 CHAR_TO_COLOR = {
     '.': (0,   0,   0),    # Off
     'R': (255, 0,   0),    # Red
@@ -421,7 +439,8 @@ def draw_left_and_flipped(canvas, grid):
     for y in range(rows):
         for x in range(cols):
             char = grid[y][x]
-            r, g, b = CHAR_TO_COLOR.get(char, (0,0,0))
+            color = CHAR_TO_COLOR.get(char, (0,0,0))
+            r, g, b = convert_color(color)
             
             # 1) Set pixel on the left half
             canvas.SetPixel(x, y, r, g, b)
@@ -446,7 +465,8 @@ def draw_64x32_and_flip(canvas, pil_image):
     # Now `cropped` is exactly 64x32
     for y in range(32):
         for x in range(64):
-            r, g, b = cropped.getpixel((x, y))
+            color = cropped.getpixel((x, y))
+            r, g, b = convert_color(color)
             # Left half
             canvas.SetPixel(x, y, r, g, b)
             # Mirror horizontally onto the right half
@@ -460,7 +480,8 @@ def draw_128x32(canvas, pil_image):
     """
     for y in range(32):
         for x in range(128):
-            r, g, b = pil_image.getpixel((x,y))
+            color = pil_image.getpixel((x, y))
+            r, g, b = convert_color(color)
             canvas.SetPixel(x, y, r, g, b)
 
 def crop_center_64x32(pil_image):
