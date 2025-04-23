@@ -402,7 +402,8 @@ def init_matrix():
     chain_length=2 so the library knows it's 2 wide.
     """
     options = RGBMatrixOptions()
-    options.hardware_mapping = 'adafruit-hat'
+    options.hardware_mapping = 'adafruit-hat'  # Correct mapping for Adafruit bonnet
+    options.gpio_slowdown = 2  # Helps with color accuracy and signal timing
     options.pixel_mapper_config = 'Rotate:0;Swap:0,2'
     options.rows = 32
     options.cols = 64
