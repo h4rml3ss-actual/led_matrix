@@ -42,6 +42,8 @@ class FrameEditor:
         self.canvas.bind("<Button-1>", self.on_click)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
+        self.canvas.bind("<Button-3>", self.on_click)
+        self.master.bind("<Control-z>", lambda event: self.undo())
         self.is_drawing = False
 
         menu = tk.Menu(master)
@@ -94,7 +96,31 @@ class FrameEditor:
     def on_click(self, event):
         self.is_drawing = True
         self.current_action = []
-        self.paint(event)
+        if event.num == 1:  # Left click
+            self.paint(event)
+        elif event.num == 3:  # Right click
+            x = event.x // PIXEL_SIZE
+            y = event.y // PIXEL_SIZE
+            if 0 <= x < GRID_WIDTH and 0 <= y < GRID_HEIGHT:
+                target_color = self.grid[y][x]
+                self.flood_fill(x, y, target_color, self.selected_color)
+        self.canvas.bind("<ButtonRelease-3>", self.on_release)
+
+    def flood_fill(self, x, y, target_color, replacement_color):
+        if target_color == replacement_color:
+            return
+        stack = [(x, y)]
+        while stack:
+            cx, cy = stack.pop()
+            if 0 <= cx < GRID_WIDTH and 0 <= cy < GRID_HEIGHT:
+                if self.grid[cy][cx] == target_color:
+                    self.grid[cy][cx] = replacement_color
+                    self.canvas.itemconfig(self.rects[(cx, cy)], fill=replacement_color)
+                    self.current_action.append((cx, cy, target_color))
+                    stack.extend([
+                        (cx + 1, cy), (cx - 1, cy),
+                        (cx, cy + 1), (cx, cy - 1)
+                    ])
 
     def on_drag(self, event):
         if self.is_drawing:
@@ -123,15 +149,30 @@ class FrameEditor:
                 self.canvas.itemconfig(self.rects[(x, y)], fill=color)
 
     def save_frame(self):
-        file_path = filedialog.asksaveasfilename(defaultextension=".json")
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json")],
+            initialfile="frame.json",
+            title="Save Frame"
+        )
         if file_path:
             with open(file_path, "w") as f:
                 json.dump(self.grid, f)
             print(f"Saved to {file_path}")
 
     def load_frame(self):
-        file_path = filedialog.askopenfilename()
+        file_path = filedialog.askopenfilename(
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("Text files", "*.txt")],
+            title="Load Frame"
+        )
         if file_path:
+            if file_path.endswith(".txt"):
+                with open(file_path, "r") as f:
+                    ascii_text = f.read()
+                self.import_ascii_from_text(ascii_text)
+                print(f"Loaded ASCII from {file_path}")
+                return
             with open(file_path, "r") as f:
                 self.grid = json.load(f)
             for y in range(GRID_HEIGHT):
@@ -171,7 +212,12 @@ class FrameEditor:
                     self.canvas.itemconfig(self.rects[(x, y)], fill=color)
 
     def export_ascii(self):
-        file_path = filedialog.asksaveasfilename(defaultextension=".txt")
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[("Text files", "*.txt")],
+            initialfile="frame_ascii.txt",
+            title="Export ASCII Frame"
+        )
         if not file_path:
             return
         color_to_symbol = {
@@ -196,3 +242,20 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = FrameEditor(root)
     root.mainloop()
+    def import_ascii_from_text(self, ascii_text):
+        lines = ascii_text.strip().split("\n")
+        lines = [line for line in lines if not line.startswith("     +") and not line.startswith("     ") and "|" in line]
+        symbol_to_color = {
+            ".": "black", "W": "white", "R": "red", "G": "green", "B": "blue",
+            "P": "purple", "O": "orange", "K": "pink"
+        }
+        for line in lines:
+            if "|" in line:
+                row_index, content = line.split("|", 1)
+                y = int(row_index.strip())
+                tokens = content.strip().split()
+                for x, symbol in enumerate(tokens):
+                    color = symbol_to_color.get(symbol.upper(), "black")
+                    if x < GRID_WIDTH and y < GRID_HEIGHT:
+                        self.grid[y][x] = color
+                        self.canvas.itemconfig(self.rects[(x, y)], fill=color)
