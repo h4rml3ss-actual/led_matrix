@@ -319,10 +319,20 @@ def parse_ascii_frame(ascii_block, rows=32, cols=64):
 # 3. Color Mapping
 # --------------------------------------------------------------------
 
+#
 # ---- Color order conversion ----
 # The rpi-rgb-led-matrix library expects RGB order by default. If your hardware requires a different order,
 # e.g., GRB or BGR, define a conversion function here and apply it before calling SetPixel.
 # For demonstration, let's provide a GRB conversion function and use it.
+#
+# Color values are defined in the CHAR_TO_COLOR dictionary below.
+# The convert_color() function applies a color order conversion if USE_GRB_ORDER is True.
+# The color order is changed via the rgb_to_grb() function.
+#
+# CHAR_TO_COLOR maps ASCII characters ('.', 'R', 'G', etc.) to (R, G, B) tuples.
+# These tuples are used in draw_left_and_flipped(), draw_64x32_and_flip(), and draw_128x32()
+# to set the pixel color on the matrix.
+#
 
 def rgb_to_grb(color):
     """Convert (R,G,B) to (G,R,B) tuple."""
@@ -338,13 +348,13 @@ def convert_color(color):
 
 CHAR_TO_COLOR = {
     '.': (0,   0,   0),    # Off
-    'R': (255, 0,   0),    # Red
-    'G': (0,   255, 0),    # Green
-    'B': (0,   0,   255),  # Blue
-    'K': (255, 105, 180),  # Pink/hot pink
-    'O': (255, 140, 0),    # Orange
-    'P': (255, 0,   255),  # Purple
-    'Y': (255, 255, 0),    # Yellow
+    'R': (0,   0,   255),    # Red in BGR
+    'G': (0,   255, 0),      # Green in BGR
+    'B': (255, 0,   0),      # Blue in BGR
+    'K': (180, 105, 255),    # Pink/hot pink in BGR (was RGB 255,105,180)
+    'O': (0, 140, 255),      # Orange in BGR (was RGB 255,140,0)
+    'P': (255, 0,   255),    # Purple in BGR (was RGB 255,0,255)
+    'Y': (0, 255, 255),      # Yellow in BGR (was RGB 255,255,0)
     # Extend as you like
 }
 
@@ -429,6 +439,7 @@ def draw_left_and_flipped(canvas, grid):
     """
     Draws the 32x64 ASCII grid onto the left half (0..63),
     and a horizontally flipped copy onto the right half (64..127).
+    Uses CHAR_TO_COLOR to map ASCII to color tuples, then applies convert_color().
     """
     rows = len(grid)
     cols = len(grid[0]) if rows > 0 else 0
@@ -455,6 +466,7 @@ def draw_64x32_and_flip(canvas, pil_image):
     """
     Crops the center 64x32 portion of `pil_image` (if bigger),
     then mirrors that region onto a 128x32 display (two 64x32 panels).
+    Uses convert_color() to apply color order conversion if needed.
     """
     cropped = crop_center_64x32(pil_image)
     if cropped is None:
@@ -477,6 +489,7 @@ def draw_64x32_and_flip(canvas, pil_image):
 def draw_128x32(canvas, pil_image):
     """
     For a 128x32 PIL image, just copy directly.
+    Uses convert_color() to apply color order conversion if needed.
     """
     for y in range(32):
         for x in range(128):
