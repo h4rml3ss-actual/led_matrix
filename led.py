@@ -403,7 +403,8 @@ def init_matrix():
     """
     options = RGBMatrixOptions()
     options.hardware_mapping = 'adafruit-hat'  # Correct mapping for Adafruit bonnet
-    options.led_rgb_sequence = 'BGR'
+    options.led_gpio_mapping = 'adafruit-hat'  # Match the CLI --led-gpio-mapping flag
+    options.led_rgb_sequence = 'GBR'
     options.gpio_slowdown = 2  # Helps with color accuracy and signal timing
     options.pixel_mapper_config = 'Rotate:0'
     options.rows = 32
