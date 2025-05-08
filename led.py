@@ -1,3 +1,16 @@
+def play_glitch_noise(canvas, matrix, duration=0.6, font_size=10):
+    glitches = [
+        "!!##$%@ AUTH B1T5 N07 C0MPL13NT",
+        ">>>_GR1D_ERR::R37RY",
+        "404: L00P P0IN73R M1551N6",
+        "//LOOP[NOISE]::v0.0.1a//",
+        ">>> D4T4: 0x7F00B1E5",
+        ":: SYNC[FAIL] ::",
+        "!!! UPL1NK_0V3R7HR0TTL3D"
+    ]
+    glitch = random.choice(glitches)
+    draw_text_frame(canvas, matrix, glitch, font_size=font_size, scroll=True, delay=0.02)
+    time.sleep(duration)
 #!/usr/bin/env python3
 """
 Audio-driven LED 'mouth' with random GIF playback on two 64x32 panels (chained horizontally),
@@ -11,6 +24,29 @@ import os
 import numpy as np
 import sounddevice as sd
 from PIL import Image  # NEW: for GIF playback
+from PIL import ImageFont, ImageDraw
+# --------------------------------------------------------------------
+# Draw Text Frame Helper
+# --------------------------------------------------------------------
+def draw_text_frame(canvas, matrix, text, font_size=10, scroll=False, delay=0.05):
+    image = Image.new("RGB", (128, 64), (0, 0, 0))  # Double height for scroll
+    draw = ImageDraw.Draw(image)
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", font_size)
+    except:
+        font = ImageFont.load_default()
+    draw.text((4, 32), text, font=font, fill=(0, 255, 0))  # Centered
+
+    if not scroll:
+        cropped = image.crop((0, 32, 128, 64))
+        draw_128x32(canvas, cropped)
+        matrix.SwapOnVSync(canvas)
+    else:
+        for y in range(32, -1, -2):  # Scroll upward
+            cropped = image.crop((0, y, 128, y + 32))
+            draw_128x32(canvas, cropped)
+            matrix.SwapOnVSync(canvas)
+            time.sleep(delay)
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
 # Globals for smile timer logic
@@ -297,19 +333,19 @@ def audio_callback(indata, frames, time_info, status):
 def pick_frame_index(volume):
     """
     Convert volume amplitude to a frame index (0..6).
-    Adjust thresholds as needed.
+    Reduced sensitivity.
     """
-    if volume < 0.01:
+    if volume < 0.02:
         return 0
-    elif volume < 0.02:
+    elif volume < 0.04:
         return 1
-    elif volume < 0.03:
+    elif volume < 0.06:
         return 2
-    elif volume < 0.05:
+    elif volume < 0.08:
         return 3
-    elif volume < 0.07:
-        return 4
     elif volume < 0.10:
+        return 4
+    elif volume < 0.12:
         return 5
     else:
         return 6
@@ -373,6 +409,62 @@ def main():
     matrix = init_matrix()
     canvas = matrix.CreateFrameCanvas()
 
+    # New boot sequence: stack and scroll multiline output
+    buffer_lines = [
+        "BOOT1N6 53CuR17Y...",
+        "[OK] L04D3D M0DuL3: 3M0T10N",
+        "[OK] C0NNEC710N 357ABL15H3D",
+        "[WRN] 1D3N717Y UNKN0WN - 4U70N0M0U5 3N717Y",
+        "[OK] N30-N37 PL45M4 SH43D3R :: 4C71V3",
+        "[OK] R34C70R 57A7U5 :: ST4BL3",
+        "[OK] 3NCRY-P741D C0NN3C710N 357 :: G00D",
+        "[OK] 5Y5T3M M3M3-C4CH3 1N174L1Z3D",
+        "[OK] PR0T0C0L P4RS3R L04D3D",
+        "[OK] 50UNDC0R3 R3SP0N53 M0DUL3 R34DY",
+        "[OK] AN1M4T10N MAN463R ONL1N3",
+        "[OK] V15U4L P1P3L1N3 5YNCHRON1Z3D",
+        ":: 53LF-DI4GN0571C C0MPL373 ::",
+        ":: 5Y5T3M 0NL1N3 ::"
+    ]
+    font_size = 10
+    image = Image.new("RGB", (128, len(buffer_lines) * 12), (0, 0, 0))  # One line every 12px
+    draw = ImageDraw.Draw(image)
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf", font_size)
+    except:
+        font = ImageFont.load_default()
+    for i, line in enumerate(buffer_lines):
+        draw.text((4, i * 12), line, font=font, fill=(0, 255, 0))
+    for y in range(0, image.height - 32 + 1, 2):
+        cropped = image.crop((0, y, 128, y + 32))
+        draw_128x32(canvas, cropped)
+        matrix.SwapOnVSync(canvas)
+        time.sleep(0.05)
+
+    # Dynamic diagnostics scroll
+    diagnostic_lines = [
+        "[CHK] SC4NN1N6 /D3V/53N50R5...",
+        "[OK] CPU T3MP: 45C",
+        "[OK] N37WORK P1N9 5TR0N9",
+        "[OK] AUD1O 1NPu7 L1NK 5TABL3",
+        "[OK] R34C710N TIM3: 5.2MS",
+        "[OK] 4N1M4T10N BUFF3R 1N74C7",
+        "[OK] V0LU-M37R CAL1BR4T3D",
+        "[OK] C0D3 3XP4N510N 4LL0W3D",
+        "[OK] D3474-PR0T3C710N 4C71V3",
+        "[OK] PR0X1M17Y S3NS0R: 0.8M",
+        "[OK] SY5T3M 5YNCH :: L0CK3D"
+    ]
+    diag_image = Image.new("RGB", (128, len(diagnostic_lines) * 12), (0, 0, 0))
+    diag_draw = ImageDraw.Draw(diag_image)
+    for i, line in enumerate(diagnostic_lines):
+        diag_draw.text((4, i * 12), line, font=font, fill=(0, 255, 0))
+    for y in range(0, diag_image.height - 32 + 1, 2):
+        cropped = diag_image.crop((0, y, 128, y + 32))
+        draw_128x32(canvas, cropped)
+        matrix.SwapOnVSync(canvas)
+        time.sleep(0.05)
+
     samplerate = 44100
     blocksize = 1024
     channels = 1
@@ -405,7 +497,7 @@ def main():
                     current_frame = SMILE_GRID
                 else:
                     now = time.time()
-                    if vol < 0.005:
+                    if vol < 0.02:
                         if silence_start_time is None:
                             silence_start_time = now
                             current_frame = ALL_FRAMES[0]
