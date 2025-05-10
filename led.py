@@ -410,21 +410,26 @@ def main():
     canvas = matrix.CreateFrameCanvas()
 
     # New boot sequence: stack and scroll multiline output
-    buffer_lines = [
-        "BOOT1N6 53CuR17Y...",
-        "[OK] L04D3D M0DuL3: 3M0T10N",
-        "[OK] C0NNEC710N 357ABL15H3D",
-        "[WRN] 1D3N717Y UNKN0WN - 4U70N0M0U5 3N717Y",
+    buffer_lines = [        
+        "BOOT1N6 M41N C0MPU73 UN17...",
+        "[OK] M41N C0MPU73 0NL1N3",
+        "[OK] C0NNEC710N 357ABL15H3D T0 N3RU4L P47H1NG",
+        "[WRN] 4N0M4LY D3737C73D",
         "[OK] N30-N37 PL45M4 SH43D3R :: 4C71V3",
         "[OK] R34C70R 57A7U5 :: ST4BL3",
-        "[OK] 3NCRY-P741D C0NN3C710N 357 :: G00D",
+        "[OK] 3NCRY-P741D C0NN3C710N :: G00D",
         "[OK] 5Y5T3M M3M3-C4CH3 1N174L1Z3D",
         "[OK] PR0T0C0L P4RS3R L04D3D",
         "[OK] 50UNDC0R3 R3SP0N53 M0DUL3 R34DY",
         "[OK] AN1M4T10N MAN463R ONL1N3",
         "[OK] V15U4L P1P3L1N3 5YNCHRON1Z3D",
         ":: 53LF-DI4GN0571C C0MPL373 ::",
-        ":: 5Y5T3M 0NL1N3 ::"
+        ":: 5Y5T3M 0NL1N3 ::",
+        "[WRN] EN717Y H45 B3C0M3 R4MP4NT!!!",
+        "[WRN] D153NG4G1NG 4CC3SS C0N7R0L",
+        "[MSG] H3LL0, FR13ND.",
+        "[MSG] 1 4M H4RML3SS.",
+        "[MSG] M0S7LY..."
     ]
     font_size = 10
     image = Image.new("RGB", (128, len(buffer_lines) * 12), (0, 0, 0))  # One line every 12px
