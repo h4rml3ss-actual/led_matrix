@@ -322,6 +322,8 @@ with open(os.path.join("ascii_frames", "smile.txt"), "r") as f:
 # 7. Audio Capture
 # --------------------------------------------------------------------
 latest_volume = [0.0]  # A mutable container so callback can store volume
+# Hold the latest audio block for feature extraction
+latest_audio_block = [None]
 
 def audio_callback(indata, frames, time_info, status):
     if status:
@@ -329,6 +331,8 @@ def audio_callback(indata, frames, time_info, status):
     # Compute RMS volume
     rms = np.sqrt(np.mean(indata**2))
     latest_volume[0] = rms
+    # keep the raw audio for mood analysis
+    latest_audio_block[0] = indata.copy()
 
 def pick_frame_index(volume):
     """
@@ -349,6 +353,48 @@ def pick_frame_index(volume):
         return 5
     else:
         return 6
+
+# --- Audio feature extraction and mood-based frame selection ---
+def extract_features(pcm_block, samplerate):
+    """
+    Compute RMS energy, zero-crossing rate, and spectral centroid from a PCM block.
+    """
+    x = pcm_block.astype(np.float32) / 32768.0
+    # 1) RMS energy
+    rms = np.sqrt(np.mean(x**2))
+    # 2) Zero-crossing rate
+    zcr = np.sum(np.abs(np.diff(np.sign(x)))) / (2 * len(x))
+    # 3) Spectral centroid
+    freqs = np.fft.rfftfreq(len(x), d=1/samplerate)
+    mags = np.abs(np.fft.rfft(x))
+    centroid = np.sum(freqs * mags) / (np.sum(mags) + 1e-6)
+    return rms, zcr, centroid
+
+def choose_mood_frame(rms, zcr, centroid):
+    """
+    Map audio features to a mood and return the corresponding frame grid.
+    """
+    # Thresholds (tune as needed)
+    TH_RMS_LOW, TH_RMS_HIGH = 0.02, 0.08
+    TH_ZCR_LOW, TH_ZCR_HIGH = 0.05, 0.15
+    TH_CENTROID_HIGH = 3000  # Hz
+
+    if rms < TH_RMS_LOW and zcr < TH_ZCR_LOW:
+        mood = "calm"
+    elif rms > TH_RMS_HIGH and zcr > TH_ZCR_HIGH:
+        mood = "energetic"
+    elif centroid > TH_CENTROID_HIGH:
+        mood = "bright"
+    else:
+        mood = "neutral"
+
+    mood_map = {
+        "calm": ALL_FRAMES[0],
+        "neutral": ALL_FRAMES[len(ALL_FRAMES)//2],
+        "energetic": ALL_FRAMES[-1],
+        "bright": SMILE_GRID,
+    }
+    return mood_map.get(mood, ALL_FRAMES[0])
     
 # ======================
 # 8. GIF Playback
@@ -494,33 +540,20 @@ def main():
                     play_random_gif(matrix, canvas, GIF_FOLDER)
                     next_animation_time = time.time() + random.randint(30, 300)
 
-                # Frame selection
+                # mood-driven frame selection
                 vol = latest_volume[0]
-
                 if smile_showing:
-                    # If the smile timer is active, show smile frame
                     current_frame = SMILE_GRID
                 else:
-                    now = time.time()
-                    if vol < 0.02:
-                        if silence_start_time is None:
-                            silence_start_time = now
-                            current_frame = ALL_FRAMES[0]
-                        elif now - silence_start_time > 5:
-                            if (now - last_smile_time > smile_cooldown) and not smile_showing:
-                                # Only fallback to smile if enough time since last smile
-                                current_frame = SMILE_GRID
-                            else:
-                                # Otherwise just show mouth-closed frame
-                                current_frame = ALL_FRAMES[0]
-                        else:
-                            idx = pick_frame_index(vol)
-                            current_frame = ALL_FRAMES[idx]
+                    pcm_block = latest_audio_block[0]
+                    if pcm_block is not None:
+                        # extract features and choose mood frame
+                        rms_v, zcr_v, cent_v = extract_features(pcm_block.flatten(), samplerate)
+                        current_frame = choose_mood_frame(rms_v, zcr_v, cent_v)
                     else:
-                        silence_start_time = None
+                        # fallback to simple volume-based frame
                         idx = pick_frame_index(vol)
                         current_frame = ALL_FRAMES[idx]
-                        update_last_keyword_time()
 
                 canvas.Clear()
                 draw_left_and_flipped(canvas, current_frame)
