@@ -1,0 +1,48 @@
+{
+    "description": "Configuration optimized for quiet speakers with low voice energy",
+    "use_case": "Soft-spoken users, ASMR content, library/quiet environments",
+    
+    "thresholds": {
+        "energy": {
+            "calm_max": 0.01,
+            "neutral_range": [0.01, 0.035],
+            "energetic_min": 0.035,
+            "excited_min": 0.07
+        },
+        "spectral": {
+            "calm_centroid_max": 1800,
+            "bright_centroid_min": 2500,
+            "rolloff_thresholds": [1200, 2500, 4500],
+            "mfcc_weights": [1.2, 1.0, 0.8, 0.6]
+        },
+        "temporal": {
+            "calm_zcr_max": 0.03,
+            "energetic_zcr_min": 0.12,
+            "tempo_thresholds": [50, 100, 150],
+            "voice_activity_threshold": 0.005
+        }
+    },
+    
+    "smoothing": {
+        "transition_time": 3.0,
+        "minimum_duration": 6.0,
+        "confidence_threshold": 0.6,
+        "buffer_size": 7,
+        "hysteresis_factor": 0.15
+    },
+    
+    "noise_filtering": {
+        "noise_gate_threshold": 0.003,
+        "adaptive_gain": true,
+        "background_learning_rate": 0.05,
+        "spectral_subtraction_factor": 1.5,
+        "voice_frequency_range": [100, 6000]
+    },
+    
+    "performance": {
+        "max_cpu_usage": 0.8,
+        "feature_complexity": "standard",
+        "buffer_size": 1024,
+        "processing_threads": 1
+    }
+}

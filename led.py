@@ -182,6 +182,37 @@ def load_ascii_frames_from_folder(folder_path):
     return frames
 
 # --------------------------------------------------------------------
+# Load frames with two-digit prefixes and mood-specific smile
+# --------------------------------------------------------------------
+def load_mood_frames(folder_path):
+    """
+    Load frames with two-digit prefixes and a mood-specific smile frame (XX-).
+    Returns (frames_list, smile_frame).
+    """
+    frames = []
+    smile = None
+    for fname in sorted(os.listdir(folder_path)):
+        if not fname.endswith('.txt'):
+            continue
+        prefix = fname[:2]
+        full_path = os.path.join(folder_path, fname)
+        if prefix.upper() == 'XX':
+            # Mood-specific smile
+            with open(full_path, 'r') as f:
+                smile = parse_ascii_frame(f.read(), rows=32, cols=64)
+        else:
+            try:
+                idx = int(prefix)
+            except ValueError:
+                continue
+            with open(full_path, 'r') as f:
+                grid = parse_ascii_frame(f.read(), rows=32, cols=64)
+            frames.append((idx, grid))
+    # Sort frames by numeric prefix
+    frames_sorted = [g for (i, g) in sorted(frames, key=lambda x: x[0])]
+    return frames_sorted, smile
+
+# --------------------------------------------------------------------
 # 4. Matrix Initialization
 # --------------------------------------------------------------------
 def init_matrix():
@@ -311,12 +342,30 @@ def crop_center_64x32(pil_image):
 
 
 # --------------------------------------------------------------------
-# 6. Load All Frames (from ascii_frames/ folder)
+# 6. Load mood-specific ASCII frame sets with prefix convention
 # --------------------------------------------------------------------
-ALL_FRAMES = load_ascii_frames_from_folder("ascii_frames")
+# Default folder fallback
+DEFAULT_FRAMES, DEFAULT_SMILE = load_mood_frames(os.path.join('ascii_frames', 'default'))
 
-with open(os.path.join("ascii_frames", "smile.txt"), "r") as f:
-    SMILE_GRID = parse_ascii_frame(f.read(), rows=32, cols=64)
+# Define subdirectories for each mood
+MOOD_FRAME_DIRS = {
+    'calm':      os.path.join('ascii_frames', 'calm'),
+    'neutral':   os.path.join('ascii_frames', 'neutral'),
+    'energetic': os.path.join('ascii_frames', 'energetic'),
+    'bright':    os.path.join('ascii_frames', 'bright'),
+}
+
+MOOD_FRAMES = {}
+MOOD_SMILES = {}
+for mood, path in MOOD_FRAME_DIRS.items():
+    try:
+        frames, smile = load_mood_frames(path)
+        MOOD_FRAMES[mood] = frames if frames else DEFAULT_FRAMES
+        MOOD_SMILES[mood] = smile if smile else DEFAULT_SMILE
+    except Exception as e:
+        print(f"Warning: loading mood '{mood}' from '{path}' failed: {e}")
+        MOOD_FRAMES[mood] = DEFAULT_FRAMES
+        MOOD_SMILES[mood] = DEFAULT_SMILE
 
 # --------------------------------------------------------------------
 # 7. Audio Capture
@@ -370,31 +419,26 @@ def extract_features(pcm_block, samplerate):
     centroid = np.sum(freqs * mags) / (np.sum(mags) + 1e-6)
     return rms, zcr, centroid
 
-def choose_mood_frame(rms, zcr, centroid):
+#
+# --------------------------------------------------------------------
+# 7. Detect mood from audio features
+# --------------------------------------------------------------------
+def detect_mood(rms, zcr, centroid):
     """
-    Map audio features to a mood and return the corresponding frame grid.
+    Determine mood key from audio features.
     """
-    # Thresholds (tune as needed)
     TH_RMS_LOW, TH_RMS_HIGH = 0.02, 0.08
     TH_ZCR_LOW, TH_ZCR_HIGH = 0.05, 0.15
     TH_CENTROID_HIGH = 3000  # Hz
 
     if rms < TH_RMS_LOW and zcr < TH_ZCR_LOW:
-        mood = "calm"
+        return "calm"
     elif rms > TH_RMS_HIGH and zcr > TH_ZCR_HIGH:
-        mood = "energetic"
+        return "energetic"
     elif centroid > TH_CENTROID_HIGH:
-        mood = "bright"
+        return "bright"
     else:
-        mood = "neutral"
-
-    mood_map = {
-        "calm": ALL_FRAMES[0],
-        "neutral": ALL_FRAMES[len(ALL_FRAMES)//2],
-        "energetic": ALL_FRAMES[-1],
-        "bright": SMILE_GRID,
-    }
-    return mood_map.get(mood, ALL_FRAMES[0])
+        return "neutral"
     
 # ======================
 # 8. GIF Playback
@@ -540,20 +584,23 @@ def main():
                     play_random_gif(matrix, canvas, GIF_FOLDER)
                     next_animation_time = time.time() + random.randint(30, 300)
 
-                # mood-driven frame selection
-                vol = latest_volume[0]
-                if smile_showing:
-                    current_frame = SMILE_GRID
+                # Determine mood (for both visualizer and smile override)
+                pcm_block = latest_audio_block[0]
+                if pcm_block is not None:
+                    rms_v, zcr_v, cent_v = extract_features(pcm_block.flatten(), samplerate)
+                    current_mood = detect_mood(rms_v, zcr_v, cent_v)
                 else:
-                    pcm_block = latest_audio_block[0]
-                    if pcm_block is not None:
-                        # extract features and choose mood frame
-                        rms_v, zcr_v, cent_v = extract_features(pcm_block.flatten(), samplerate)
-                        current_frame = choose_mood_frame(rms_v, zcr_v, cent_v)
-                    else:
-                        # fallback to simple volume-based frame
-                        idx = pick_frame_index(vol)
-                        current_frame = ALL_FRAMES[idx]
+                    current_mood = 'neutral'
+
+                if smile_showing:
+                    # mood-specific smile frame
+                    current_frame = MOOD_SMILES.get(current_mood, DEFAULT_SMILE)
+                else:
+                    # pick frame index by volume
+                    idx = pick_frame_index(latest_volume[0])
+                    frames_list = MOOD_FRAMES.get(current_mood, DEFAULT_FRAMES)
+                    # wrap index if needed
+                    current_frame = frames_list[idx % len(frames_list)]
 
                 canvas.Clear()
                 draw_left_and_flipped(canvas, current_frame)

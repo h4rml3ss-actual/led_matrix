@@ -1,0 +1,50 @@
+{
+    "description": "Configuration optimized for noisy environments with background interference",
+    "use_case": "Conventions, outdoor events, crowded spaces, background music",
+    
+    "thresholds": {
+        "energy": {
+            "calm_max": 0.03,
+            "neutral_range": [0.03, 0.10],
+            "energetic_min": 0.10,
+            "excited_min": 0.20
+        },
+        "spectral": {
+            "calm_centroid_max": 2000,
+            "bright_centroid_min": 3200,
+            "rolloff_thresholds": [1600, 3200, 5500],
+            "mfcc_weights": [1.5, 1.2, 0.9, 0.6]
+        },
+        "temporal": {
+            "calm_zcr_max": 0.06,
+            "energetic_zcr_min": 0.16,
+            "tempo_thresholds": [70, 130, 180],
+            "voice_activity_threshold": 0.025
+        }
+    },
+    
+    "smoothing": {
+        "transition_time": 2.5,
+        "minimum_duration": 7.0,
+        "confidence_threshold": 0.8,
+        "buffer_size": 8,
+        "hysteresis_factor": 0.2
+    },
+    
+    "noise_filtering": {
+        "noise_gate_threshold": 0.025,
+        "adaptive_gain": true,
+        "background_learning_rate": 0.25,
+        "spectral_subtraction_factor": 3.0,
+        "voice_frequency_range": [150, 7000],
+        "enable_voice_isolation": true,
+        "noise_profile_update_rate": 0.1
+    },
+    
+    "performance": {
+        "max_cpu_usage": 0.85,
+        "feature_complexity": "advanced",
+        "buffer_size": 1024,
+        "processing_threads": 1
+    }
+}

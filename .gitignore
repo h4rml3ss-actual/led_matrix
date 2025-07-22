@@ -1,1 +1,168 @@
+# Enhanced Mood Detection System - .gitignore
+# This file excludes non-essential files while preserving core functionality
+
+# ============================================================================
+# Python
+# ============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ============================================================================
+# Virtual Environments
+# ============================================================================
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ============================================================================
+# IDE and Editor Files
+# ============================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ============================================================================
+# Operating System Files
+# ============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ============================================================================
+# Logs and Runtime Data
+# ============================================================================
+*.log
+logs/
+mood_detection_errors.log
+performance_monitor.log
+debug_output.log
+
+# ============================================================================
+# User-Specific Data (Privacy Protection)
+# ============================================================================
+# Personal calibration data (keep template for reference)
+calibration_data/*_calibration.json
+!calibration_data/template_calibration.json
+
+# Audio samples and recordings
+calibration_data/samples/
+calibration_data/*.wav
+calibration_data/*.mp3
+calibration_data/*.log
+
+# User configuration overrides (keep examples)
+mood_config.json
+!mood_config_example.json
+local_config.json
+
+# ============================================================================
+# Audio Files (All Formats)
+# ============================================================================
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.ogg
+*.aac
+
+# ============================================================================
+# Temporary and Cache Files
+# ============================================================================
+*.tmp
+*.temp
+.cache/
+.pytest_cache/
+
+# ============================================================================
+# Testing and Coverage
+# ============================================================================
+.coverage
+htmlcov/
+.tox/
+.nox/
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# ============================================================================
+# Development Tools
+# ============================================================================
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Profiling and debugging
+debug/
+test_output/
+*.prof
+profile_output.prof
+
+# Backup files
+*_backup_*.py
+*.bak
+*.backup
+
+# ============================================================================
+# Documentation (Generated)
+# ============================================================================
+site/
+*_SUMMARY.md
+
+# ============================================================================
+# Project-Specific Exclusions
+# ============================================================================
+# Development artifacts
 ocode/
+
+# Media files (not needed for core functionality)
+gifs/
+*.gif
+
+# OS-specific files in directories we keep
+ascii_frames/.DS_Store
+old frames/.DS_Store
+
+# ============================================================================
+# IMPORTANT: Files and Directories to KEEP
+# ============================================================================
+# ✓ Core Python modules (*.py)
+# ✓ Documentation (docs/)
+# ✓ Example configurations (mood_config_examples/)
+# ✓ ASCII frames for LED display (ascii_frames/)
+# ✓ Old frames for reference (old frames/*.txt)
+# ✓ README.md, LICENSE, features.md
+# ✓ Test files (test_*.py) - for development
+# ✓ .kiro/ directory (project specifications)
+# ✓ Template files (*_example.json, template_*.json)

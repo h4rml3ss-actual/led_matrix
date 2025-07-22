@@ -1,0 +1,48 @@
+{
+    "description": "Configuration optimized for loud speakers with high voice energy",
+    "use_case": "Energetic performers, outdoor events, high-energy content",
+    
+    "thresholds": {
+        "energy": {
+            "calm_max": 0.04,
+            "neutral_range": [0.04, 0.12],
+            "energetic_min": 0.12,
+            "excited_min": 0.25
+        },
+        "spectral": {
+            "calm_centroid_max": 2200,
+            "bright_centroid_min": 3500,
+            "rolloff_thresholds": [1800, 3500, 6000],
+            "mfcc_weights": [0.8, 0.7, 0.5, 0.3]
+        },
+        "temporal": {
+            "calm_zcr_max": 0.07,
+            "energetic_zcr_min": 0.18,
+            "tempo_thresholds": [80, 140, 200],
+            "voice_activity_threshold": 0.02
+        }
+    },
+    
+    "smoothing": {
+        "transition_time": 1.5,
+        "minimum_duration": 4.0,
+        "confidence_threshold": 0.75,
+        "buffer_size": 4,
+        "hysteresis_factor": 0.08
+    },
+    
+    "noise_filtering": {
+        "noise_gate_threshold": 0.02,
+        "adaptive_gain": true,
+        "background_learning_rate": 0.15,
+        "spectral_subtraction_factor": 2.5,
+        "voice_frequency_range": [80, 8000]
+    },
+    
+    "performance": {
+        "max_cpu_usage": 0.8,
+        "feature_complexity": "standard",
+        "buffer_size": 1024,
+        "processing_threads": 1
+    }
+}

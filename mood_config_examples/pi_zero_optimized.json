@@ -1,0 +1,51 @@
+{
+    "description": "Configuration optimized for Raspberry Pi Zero 2 W performance constraints",
+    "use_case": "Resource-limited hardware, battery operation, minimal processing power",
+    
+    "thresholds": {
+        "energy": {
+            "calm_max": 0.02,
+            "neutral_range": [0.02, 0.08],
+            "energetic_min": 0.08,
+            "excited_min": 0.15
+        },
+        "spectral": {
+            "calm_centroid_max": 2000,
+            "bright_centroid_min": 3000,
+            "rolloff_thresholds": [1500, 3000, 5000],
+            "mfcc_weights": [1.0, 0.5, 0.0, 0.0]
+        },
+        "temporal": {
+            "calm_zcr_max": 0.05,
+            "energetic_zcr_min": 0.15,
+            "tempo_thresholds": [60, 120, 180],
+            "voice_activity_threshold": 0.01
+        }
+    },
+    
+    "smoothing": {
+        "transition_time": 2.0,
+        "minimum_duration": 5.0,
+        "confidence_threshold": 0.7,
+        "buffer_size": 3,
+        "hysteresis_factor": 0.1
+    },
+    
+    "noise_filtering": {
+        "noise_gate_threshold": 0.01,
+        "adaptive_gain": false,
+        "background_learning_rate": 0.05,
+        "spectral_subtraction_factor": 1.5,
+        "voice_frequency_range": [200, 4000],
+        "enable_voice_isolation": false
+    },
+    
+    "performance": {
+        "max_cpu_usage": 0.6,
+        "feature_complexity": "simple",
+        "buffer_size": 512,
+        "processing_threads": 1,
+        "enable_performance_scaling": true,
+        "memory_limit_mb": 64
+    }
+}

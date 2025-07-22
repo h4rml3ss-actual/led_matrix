@@ -1,0 +1,29 @@
+{
+  "thresholds": {
+    "energy": {
+      "calm_max": 0.02,
+      "neutral_range": [0.02, 0.08],
+      "energetic_min": 0.08,
+      "excited_min": 0.15
+    },
+    "spectral": {
+      "calm_centroid_max": 2000.0,
+      "bright_centroid_min": 3000.0,
+      "rolloff_thresholds": [1500.0, 3000.0, 5000.0]
+    },
+    "temporal": {
+      "calm_zcr_max": 0.05,
+      "energetic_zcr_min": 0.15
+    }
+  },
+  "smoothing": {
+    "transition_time": 2.0,
+    "minimum_duration": 5.0,
+    "confidence_threshold": 0.7
+  },
+  "noise_filtering": {
+    "noise_gate_threshold": 0.01,
+    "adaptive_gain": true,
+    "background_learning_rate": 0.1
+  }
+}
