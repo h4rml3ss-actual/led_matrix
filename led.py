@@ -1,16 +1,4 @@
-def play_glitch_noise(canvas, matrix, duration=0.6, font_size=10):
-    glitches = [
-        "!!##$%@ AUTH B1T5 N07 C0MPL13NT",
-        ">>>_GR1D_ERR::R37RY",
-        "404: L00P P0IN73R M1551N6",
-        "//LOOP[NOISE]::v0.0.1a//",
-        ">>> D4T4: 0x7F00B1E5",
-        ":: SYNC[FAIL] ::",
-        "!!! UPL1NK_0V3R7HR0TTL3D"
-    ]
-    glitch = random.choice(glitches)
-    draw_text_frame(canvas, matrix, glitch, font_size=font_size, scroll=True, delay=0.02)
-    time.sleep(duration)
+
 #!/usr/bin/env python3
 """
 Audio-driven LED 'mouth' with random GIF playback on two 64x32 panels (chained horizontally),
@@ -443,6 +431,21 @@ def detect_mood(rms, zcr, centroid):
 # ======================
 # 8. GIF Playback
 # ======================
+def play_glitch_noise(canvas, matrix, duration=0.6, font_size=10):
+    glitches = [
+        "!!##$%@ AUTH B1T5 N07 C0MPL13NT",
+        ">>>_GR1D_ERR::R37RY",
+        "404: L00P P0IN73R M1551N6",
+        "//LOOP[NOISE]::v0.0.1a//",
+        ">>> D4T4: 0x7F00B1E5",
+        ":: SYNC[FAIL] ::",
+        "!!! UPL1NK_0V3R7HR0TTL3D",
+        "!!!RAMPANCY DETECTED!!!"
+    ]
+    glitch = random.choice(glitches)
+    draw_text_frame(canvas, matrix, glitch, font_size=font_size, scroll=True, delay=0.02)
+    time.sleep(duration)
+
 def play_gif(matrix, canvas, gif_path):
     """
     Opens a GIF, center-crops each frame to 64x32 if possible,
