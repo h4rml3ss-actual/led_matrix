@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 Audio-driven LED 'mouth' with random GIF playback on two 64x32 panels (chained horizontally),
