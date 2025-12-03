@@ -2,6 +2,8 @@
 
 An intelligent Protogen visor display system that uses advanced audio analysis to detect emotional states and respond with appropriate LED animations. Built for Raspberry Pi Zero 2 W with Adafruit RGB Matrix Bonnet.
 
+This repository contains both the original LED pipeline (`led.py`) and an enhanced path (`led_with_enhancements.py` / `enhanced_led.py`) that layers in richer audio features, smoother mood transitions, GIF playback, and file-based diagnostics.
+
 ---
 
 ## 🧠 **Enhanced Mood Detection**
@@ -12,7 +14,7 @@ This system goes beyond simple volume detection to analyze voice characteristics
 - **🔊 Advanced Audio Analysis**: Spectral centroid, MFCC, zero-crossing rate, pitch detection
 - **🎯 User Calibration**: Personalized detection thresholds for improved accuracy
 - **🔄 Smooth Transitions**: Intelligent mood smoothing prevents flickering
-- **�️ dConfigurable Parameters**: Extensive customization options
+- **⚙️ Configurable Parameters**: Extensive customization options
 - **⚡ Performance Optimized**: Runs efficiently on Pi Zero 2 W
 
 ---
@@ -20,19 +22,21 @@ This system goes beyond simple volume detection to analyze voice characteristics
 ## 🚀 **Key Features**
 
 ### **Intelligent Mood Detection**
-- **Multi-Feature Analysis**: Combines energy, spectral, and temporal features
+- **Multi-Feature Analysis**: Combines energy, spectral, temporal, and pitch features
 - **Noise Filtering**: Advanced background noise suppression
 - **Confidence Scoring**: Only triggers on high-confidence detections
-- **Hysteresis**: Prevents rapid mood oscillation
+- **Hysteresis & Smoothing**: Prevents rapid mood oscillation
 
 ### **User Personalization**
 - **Calibration System**: Learns your voice characteristics
+- **Baseline Capture**: Records a short snippet to establish personal feature averages
 - **Multiple User Profiles**: Switch between different users
 - **Adaptive Thresholds**: Automatically adjusts to your voice
 
 ### **Visual Display**
 - **Mood-Responsive Animations**: Different LED patterns for each mood
 - **Smooth Transitions**: Gradual changes between emotional states
+- **GIF Playback**: Renders multi-frame GIFs from the `gifs/` folder across both matrices
 - **Custom Frame Editor**: Design your own 64x32 LED animations
 - **Color Palette**: Red, Green, Blue, Pink, Purple, Orange, White, Black
 
@@ -40,7 +44,7 @@ This system goes beyond simple volume detection to analyze voice characteristics
 - **Real-Time Processing**: Low-latency mood detection
 - **Error Recovery**: Automatic fallback and recovery systems
 - **Performance Monitoring**: Built-in system health tracking
-- **Extensive Logging**: Detailed debugging and analysis tools
+- **Extensive Logging & Diagnostics**: File-based audio diagnostics and detailed logs
 
 ---
 
@@ -61,8 +65,9 @@ This system goes beyond simple volume detection to analyze voice characteristics
 │   └── calibration_data/             # User calibration profiles
 │
 ├── 🖥️ Display & Integration
-│   ├── led.py                        # Main LED display controller
-│   ├── enhanced_led.py               # Enhanced LED with mood detection
+│   ├── led.py                        # Baseline LED display controller
+│   ├── led_with_enhancements.py      # Wrapper that adds enhanced detection into led.py
+│   ├── enhanced_led.py               # Standalone enhanced LED controller with GIF playback
 │   ├── frame_editor.py               # GUI frame design tool
 │   └── ascii_frames/                 # LED animation frames
 │
@@ -101,11 +106,11 @@ cd enhanced-mood-detection
 # Install dependencies
 pip install -r requirements.txt
 
-# Run initial setup and calibration
+# Run initial setup and calibration (optional but recommended)
 python demo_user_calibration.py --interactive --user "your_name"
 
-# Start the system
-python led.py
+# Start the enhanced system (falls back gracefully if enhanced deps are missing)
+python led_with_enhancements.py --user "your_name"
 ```
 
 ### **Configuration Options**
@@ -123,26 +128,27 @@ cp mood_config_examples/pi_zero_optimized.json mood_config.json  # For Pi Zero p
 
 ### **1. Basic Usage**
 ```bash
-# Start with default settings
+# Start with default settings (baseline pipeline)
 python led.py
 
-# The system will automatically:
-# - Initialize audio input
-# - Begin mood detection
-# - Display appropriate LED animations
+# Start with enhanced features (mood smoothing, GIFs, diagnostics hooks)
+python led_with_enhancements.py --user default
 ```
 
 ### **2. User Calibration (Recommended)**
 ```bash
-# Run interactive calibration for better accuracy
-python demo_user_calibration.py --interactive
+# Run interactive calibration for better accuracy and baseline capture
+python demo_user_calibration.py --interactive --user default
 
-# Test the calibrated system
+# Test the calibrated system with enhanced analysis
 python demo_enhanced_features.py --test-calibration
 ```
 
-### **3. Performance Monitoring**
+### **3. Diagnostics & Monitoring**
 ```bash
+# Analyze an audio file and view feature/mood summaries
+python demo_debug_diagnostic.py --audio-file path/to/sample.wav
+
 # Monitor real-time performance
 python demo_performance_monitoring.py --real-time
 
