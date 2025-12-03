@@ -5,6 +5,8 @@ Extends the basic RMS/ZCR/spectral centroid features with comprehensive audio an
 """
 
 import numpy as np
+import queue
+import time
 from dataclasses import dataclass
 from typing import List, Optional
 import scipy.signal
@@ -611,15 +613,147 @@ class EnhancedFeatureExtractor:
         confidence = float(np.mean(confidence_factors))
         return max(0.0, min(confidence, 1.0))
     
-    def get_baseline_features(self, duration_seconds: int = 5) -> Optional[AudioFeatures]:
+    def get_baseline_features(self, duration_seconds: int = 5, samplerate: Optional[int] = None,
+                              frame_size: Optional[int] = None) -> Optional[AudioFeatures]:
         """
-        Get baseline features for calibration.
-        This would typically be called during a calibration phase.
+        Record audio for a baseline window and return aggregated features.
+
+        Args:
+            duration_seconds: Duration to record for baseline capture.
+            samplerate: Optional override for the recording sample rate.
+            frame_size: Optional override for frame size during capture.
+
+        Returns:
+            AudioFeatures with averaged metrics over the capture window, or None on failure.
         """
-        # This is a placeholder - in real implementation, this would
-        # collect audio for the specified duration and return average features
-        # For now, return None to indicate no baseline available
-        return None
+        effective_samplerate = samplerate or self.samplerate
+        effective_frame_size = frame_size or self.frame_size
+
+        # Temporarily override samplerate/frame_size to align normalization with capture
+        original_samplerate = self.samplerate
+        original_frame_size = self.frame_size
+        self.samplerate = effective_samplerate
+        self.frame_size = effective_frame_size
+
+        try:
+            recorded_audio = self._record_audio(
+                duration_seconds=duration_seconds,
+                samplerate=effective_samplerate,
+                frame_size=effective_frame_size,
+            )
+
+            if recorded_audio is None or len(recorded_audio) == 0:
+                return None
+
+            feature_samples = []
+            hop = effective_frame_size
+            timestamp = 0.0
+
+            for start in range(0, len(recorded_audio) - effective_frame_size + 1, hop):
+                segment = recorded_audio[start:start + effective_frame_size]
+                features = self.extract_features(segment, timestamp=timestamp)
+                feature_samples.append(features)
+                timestamp += hop / float(effective_samplerate)
+
+            return self._aggregate_baseline_features(feature_samples)
+
+        except Exception as e:
+            self.error_manager.handle_error(
+                'baseline_capture', 'baseline_error', e, ErrorSeverity.MEDIUM
+            )
+            return None
+        finally:
+            self.samplerate = original_samplerate
+            self.frame_size = original_frame_size
+
+    def _record_audio(self, duration_seconds: int, samplerate: int, frame_size: int,
+                      channels: int = 1) -> np.ndarray:
+        """Record audio from the microphone for the given duration."""
+        try:
+            import sounddevice as sd
+        except Exception as e:
+            self.error_manager.handle_error(
+                'baseline_capture', 'microphone_unavailable', e, ErrorSeverity.HIGH
+            )
+            return np.array([])
+
+        audio_queue: "queue.Queue[np.ndarray]" = queue.Queue()
+        blocks = []
+
+        def _callback(indata, frames, time_info, status):
+            if status:
+                self.error_manager.handle_error(
+                    'baseline_capture', 'stream_status', Exception(str(status)), ErrorSeverity.LOW
+                )
+            audio_queue.put(indata.copy())
+
+        stream = None
+        try:
+            stream = sd.InputStream(
+                channels=channels,
+                samplerate=samplerate,
+                blocksize=frame_size,
+                callback=_callback,
+            )
+            stream.start()
+
+            start_time = time.time()
+            while time.time() - start_time < duration_seconds:
+                try:
+                    block = audio_queue.get(timeout=0.5)
+                    blocks.append(block)
+                except queue.Empty:
+                    continue
+        except Exception as e:
+            self.error_manager.handle_error(
+                'baseline_capture', 'recording_error', e, ErrorSeverity.MEDIUM
+            )
+            return np.array([])
+        finally:
+            if stream is not None:
+                try:
+                    stream.stop()
+                    stream.close()
+                except Exception:
+                    pass
+
+        if not blocks:
+            return np.array([])
+
+        audio_data = np.concatenate(blocks, axis=0)
+        return audio_data.flatten().astype(np.float32)
+
+    def _aggregate_baseline_features(self, feature_samples: List[AudioFeatures]) -> Optional[AudioFeatures]:
+        """Aggregate a list of feature samples into a single baseline profile."""
+        if not feature_samples:
+            return None
+
+        def _avg(field: str) -> float:
+            return float(np.mean([getattr(sample, field) for sample in feature_samples]))
+
+        def _avg_list(field: str) -> List[float]:
+            values = np.array([getattr(sample, field) for sample in feature_samples], dtype=np.float32)
+            return np.mean(values, axis=0).tolist()
+
+        voice_activity_ratio = float(np.mean([1.0 if f.voice_activity else 0.0 for f in feature_samples]))
+
+        return AudioFeatures(
+            rms=_avg('rms'),
+            peak_energy=_avg('peak_energy'),
+            energy_variance=_avg('energy_variance'),
+            spectral_centroid=_avg('spectral_centroid'),
+            spectral_rolloff=_avg('spectral_rolloff'),
+            spectral_flux=_avg('spectral_flux'),
+            mfccs=_avg_list('mfccs'),
+            zero_crossing_rate=_avg('zero_crossing_rate'),
+            tempo=_avg('tempo'),
+            voice_activity=voice_activity_ratio >= 0.5,
+            fundamental_freq=_avg('fundamental_freq'),
+            pitch_stability=_avg('pitch_stability'),
+            pitch_range=_avg('pitch_range'),
+            timestamp=_avg('timestamp'),
+            confidence=_avg('confidence')
+        )
     
     def update_noise_profile(self, pcm_block: np.ndarray) -> None:
         """
