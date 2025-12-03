@@ -306,6 +306,28 @@ class TestEnhancedFeatureExtractor(unittest.TestCase):
         features = self.extractor.extract_features(quiet_audio)
         self.assertLessEqual(features.confidence, 0.5)  # Should have low confidence
 
+    def test_get_baseline_features_with_mock_recording(self):
+        """Baseline capture should aggregate recorded features."""
+        extractor = EnhancedFeatureExtractor(
+            samplerate=8000,
+            frame_size=64,
+            enable_noise_filtering=False
+        )
+
+        synthetic_audio = np.ones(64 * 3, dtype=np.float32) * 0.2
+
+        def _fake_record(duration_seconds: int, samplerate: int, frame_size: int):
+            return synthetic_audio
+
+        extractor._record_audio = _fake_record  # type: ignore
+
+        baseline = extractor.get_baseline_features(duration_seconds=1, samplerate=8000, frame_size=64)
+
+        self.assertIsInstance(baseline, AudioFeatures)
+        self.assertIsNotNone(baseline)
+        self.assertGreater(baseline.rms, 0.0)
+        self.assertEqual(len(baseline.mfccs), 4)
+
 
 class TestFeatureExtractorIntegration(unittest.TestCase):
     """Integration tests for the feature extractor."""
