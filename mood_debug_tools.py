@@ -15,6 +15,7 @@ import numpy as np
 from datetime import datetime
 import threading
 import queue
+from scipy.io import wavfile
 
 # Import enhanced components
 try:
@@ -613,11 +614,161 @@ class DiagnosticAnalyzer:
     
     def _analyze_audio_file(self, audio_file: str) -> Dict[str, Any]:
         """Analyze audio file for diagnostic purposes."""
-        # This would require audio file loading capabilities
-        # For now, return placeholder
+        if not os.path.exists(audio_file):
+            return {
+                'file_path': audio_file,
+                'error': 'Audio file not found',
+                'message': 'Please provide a valid path to an audio file.'
+            }
+
+        if not ENHANCED_AVAILABLE:
+            return {
+                'file_path': audio_file,
+                'error': 'Enhanced analysis components are unavailable',
+                'message': 'Install enhanced dependencies to enable file diagnostics.'
+            }
+
+        try:
+            samplerate, data = wavfile.read(audio_file)
+        except Exception as e:
+            return {
+                'file_path': audio_file,
+                'error': f'Failed to load audio file: {e}',
+                'message': 'Unsupported or corrupt audio file.'
+            }
+
+        try:
+            audio = np.asarray(data, dtype=np.float32)
+            messages: List[str] = []
+
+            if audio.ndim > 1:
+                audio = np.mean(audio, axis=1)
+                messages.append('Input audio was multi-channel and has been downmixed to mono.')
+
+            if audio.dtype.kind in {'i', 'u'}:
+                max_val = np.iinfo(data.dtype).max or 1
+                audio = audio / float(max_val)
+            elif audio.dtype.kind == 'f':
+                audio = np.clip(audio, -1.0, 1.0)
+            else:
+                return {
+                    'file_path': audio_file,
+                    'error': f'Unsupported audio dtype: {audio.dtype}',
+                    'message': 'Provide PCM integer or float audio formats.'
+                }
+
+            if len(audio) == 0:
+                return {
+                    'file_path': audio_file,
+                    'error': 'Audio file is empty',
+                    'message': 'Provide an audio file with samples for analysis.'
+                }
+
+            # Initialize components if necessary
+            if self.feature_extractor is None or getattr(self.feature_extractor, 'samplerate', None) != samplerate:
+                self.feature_extractor = EnhancedFeatureExtractor(samplerate=samplerate)
+
+            if self.mood_detector is None:
+                self.mood_detector = AdvancedMoodDetector()
+
+            frame_size = getattr(self.feature_extractor, 'frame_size', 1024)
+            features_list: List[AudioFeatures] = []
+            mood_results: List[MoodResult] = []
+
+            for start in range(0, len(audio), frame_size):
+                block = audio[start:start + frame_size]
+                if len(block) == 0:
+                    continue
+
+                timestamp = start / float(samplerate)
+                features = self.feature_extractor.extract_features(block, timestamp=timestamp)
+                features_list.append(features)
+
+                try:
+                    mood_results.append(self.mood_detector.detect_mood(features))
+                except Exception as e:
+                    messages.append(f"Mood detection failed for frame at {timestamp:.3f}s: {e}")
+
+            if not features_list:
+                return {
+                    'file_path': audio_file,
+                    'error': 'No audio frames could be processed',
+                    'message': 'Ensure the file contains valid PCM audio data.'
+                }
+
+            feature_stats = self._summarize_features(features_list)
+            mood_summary = self._summarize_moods(mood_results)
+
+            return {
+                'file_path': audio_file,
+                'samplerate': samplerate,
+                'duration_seconds': len(audio) / float(samplerate),
+                'frames_analyzed': len(features_list),
+                'feature_stats': feature_stats,
+                'mood_summary': mood_summary,
+                'messages': messages
+            }
+        except Exception as e:
+            return {
+                'file_path': audio_file,
+                'error': f'Unexpected audio analysis failure: {e}',
+                'message': 'Try using a different audio file or check diagnostic logs.'
+            }
+
+    def _summarize_features(self, features_list: List['AudioFeatures']) -> Dict[str, Any]:
+        """Compute summary statistics for extracted features."""
+        def stats(values: List[float]) -> Dict[str, float]:
+            arr = np.asarray(values, dtype=np.float32)
+            return {
+                'min': float(np.min(arr)),
+                'max': float(np.max(arr)),
+                'mean': float(np.mean(arr)),
+                'std': float(np.std(arr))
+            }
+
+        feature_fields = [
+            'rms', 'peak_energy', 'energy_variance', 'spectral_centroid',
+            'spectral_rolloff', 'spectral_flux', 'zero_crossing_rate',
+            'tempo', 'fundamental_freq', 'pitch_stability', 'pitch_range', 'confidence'
+        ]
+
+        summary: Dict[str, Any] = {}
+        for field in feature_fields:
+            values = [getattr(f, field) for f in features_list]
+            summary[field] = stats(values)
+
+        # Handle MFCCs separately to retain per-coefficient statistics
+        mfcc_matrix = np.array([f.mfccs for f in features_list if hasattr(f, 'mfccs')])
+        if mfcc_matrix.size:
+            summary['mfccs'] = [stats(mfcc_matrix[:, i]) for i in range(mfcc_matrix.shape[1])]
+
+        # Voice activity ratio
+        voice_activity_flags = [getattr(f, 'voice_activity', False) for f in features_list]
+        if voice_activity_flags:
+            activity_ratio = sum(1 for v in voice_activity_flags if v) / len(voice_activity_flags)
+            summary['voice_activity_ratio'] = activity_ratio
+
+        return summary
+
+    def _summarize_moods(self, mood_results: List['MoodResult']) -> Dict[str, Any]:
+        """Summarize mood classifications across analyzed frames."""
+        if not mood_results:
+            return {'error': 'Mood classification unavailable'}
+
+        mood_counts: Dict[str, int] = {}
+        confidences: List[float] = []
+        for result in mood_results:
+            mood_counts[result.mood] = mood_counts.get(result.mood, 0) + 1
+            confidences.append(result.confidence)
+
+        dominant_mood = max(mood_counts, key=mood_counts.get)
+        average_confidence = float(np.mean(confidences)) if confidences else 0.0
+
         return {
-            'file_path': audio_file,
-            'analysis': 'Audio file analysis not implemented yet'
+            'dominant_mood': dominant_mood,
+            'mood_counts': mood_counts,
+            'average_confidence': average_confidence,
+            'last_debug_scores': mood_results[-1].debug_scores if mood_results else {}
         }
     
     def _generate_recommendations(self, results: Dict[str, Any]) -> List[str]:
