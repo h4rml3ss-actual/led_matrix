@@ -10,9 +10,10 @@ import time
 import random
 import os
 import threading
+from pathlib import Path
 import numpy as np
 import sounddevice as sd
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image, ImageFont, ImageDraw, ImageSequence
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
 # Import our enhanced components
@@ -592,10 +593,43 @@ class EnhancedLEDSystem:
         self.last_keyword_time = time.time()
     
     def play_random_gif(self):
-        """Play a random GIF animation (placeholder for now)."""
-        print("GLITCHGLITCH! (GIF playback not implemented in enhanced version)")
-        # TODO: Implement GIF playback with enhanced display system
-        time.sleep(2)  # Simulate GIF duration
+        """Play a random GIF animation using the configured GIF folder."""
+        gif_dir = Path(self.config.gif_folder)
+
+        if not gif_dir.exists():
+            print(f"GIF folder not found: {gif_dir}")
+            return
+
+        gif_files = [p for p in gif_dir.iterdir() if p.suffix.lower() == ".gif"]
+        if not gif_files:
+            print(f"No GIF files found in {gif_dir}")
+            return
+
+        gif_path = random.choice(gif_files)
+        print(f"Starting GIF playback: {gif_path}")
+
+        try:
+            with Image.open(gif_path) as gif:
+                frames = []
+                durations = []
+
+                for frame in ImageSequence.Iterator(gif):
+                    frames.append(frame.convert("RGB").resize((128, 32)))
+                    durations.append(max(frame.info.get("duration", 100) / 1000.0, 0.01))
+
+                if not frames:
+                    raise ValueError("GIF contained no frames")
+
+                for frame, duration in zip(frames, durations):
+                    self.display.draw_pil_image(frame)
+                    time.sleep(duration)
+
+            print(f"Finished GIF playback: {gif_path}")
+
+        except FileNotFoundError:
+            print(f"GIF file not found: {gif_path}")
+        except Exception as e:
+            print(f"Error playing GIF {gif_path}: {e}")
     
     def print_status(self):
         """Print system status information."""
